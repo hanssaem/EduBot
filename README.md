@@ -1,1 +1,1 @@
-# MoodMend
+# EduBot
