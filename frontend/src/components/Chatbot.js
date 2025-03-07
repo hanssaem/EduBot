@@ -6,7 +6,7 @@ const Chatbot = () => {
     const [messages, setMessages] = useState([]);
 
     const addMessage = (sender, message) => {
-        setMessages((prevMessages) => [{ sender, message }, ...prevMessages]);
+        setMessages((prevMessages) => [...prevMessages, { sender, message }]);
     };
 
     const handleSendMessage = async (message) => {
@@ -24,12 +24,15 @@ const Chatbot = () => {
     };
 
     return (
-        <div id="chat-container">
-            <div id="chat-messages">
+        <div className="flex flex-col h-screen bg-gray-100">
+            {/* 채팅 메시지 영역 */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((msg, index) => (
                     <Message key={index} sender={msg.sender} message={msg.message} />
                 ))}
             </div>
+
+            {/* 입력창 */}
             <Input onSendMessage={handleSendMessage} />
         </div>
     );

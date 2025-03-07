@@ -16,14 +16,17 @@ const Input = ({ onSendMessage }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="flex p-4 bg-white border-t shadow-md">
             <input
                 type="text"
                 value={input}
                 onChange={handleInputChange}
                 placeholder="메시지를 입력하세요..."
+                className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
-            <button type="submit">전송</button>
+            <button type="submit" className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-full">
+                전송
+            </button>
         </form>
     );
 };
