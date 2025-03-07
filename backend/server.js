@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 const port = 5000;
@@ -11,7 +12,7 @@ app.use(express.json());
 
 
 // OpenAI API 설정
-const apiKey = '';
+const apiKey = process.env.OPENAI_API_KEY;
 const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
 
 app.post('/api/chat', async (req, res) => {
