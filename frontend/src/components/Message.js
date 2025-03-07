@@ -4,13 +4,14 @@ const Message = ({ sender, message }) => {
     const isUser = sender === 'User';
 
     return (
-        <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+        <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mt-4 mb-10`}>
             <div
-                className={`px-4 py-2 rounded-lg max-w-xs text-white ${isUser ? 'bg-blue-500' : 'bg-gray-300 text-black'
+                className={`max-w-[80%] p-4 rounded-lg text-xl leading-relaxed ${isUser
+                    ? 'bg-yellow-400 text-white rounded-br-none'
+                    : 'bg-gray-100 text-gray-900 rounded-bl-none'
                     }`}
             >
-                <strong className="block text-xs opacity-75">{sender}</strong>
-                <p>{message}</p>
+                {message}
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { HiArrowUp } from "react-icons/hi";
 
-const Input = ({ onSendMessage }) => {
+const Input = ({ messages, onSendMessage }) => {
     const [input, setInput] = useState('');
 
     const handleInputChange = (event) => {
@@ -16,17 +17,43 @@ const Input = ({ onSendMessage }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex p-4 bg-white border-t shadow-md">
-            <input
-                type="text"
-                value={input}
-                onChange={handleInputChange}
-                placeholder="메시지를 입력하세요..."
-                className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <button type="submit" className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-full">
-                전송
-            </button>
+        <form onSubmit={handleSubmit} className="p-5 flex bg-white sticky bottom-0 w-full">
+            <div className="relative flex-1 flex flex-col">
+                {messages.length > 0 && (
+                    <div className="flex justify-center space-x-4 mb-4">
+                        <button
+                            type="button"
+                            className="px-6 py-3 bg-yellow-400 text-white rounded-full text-xl shadow-md"
+                        //onClick={handleStopChat}
+                        >
+                            대화 그만하기
+                        </button>
+                        <button
+                            type="button"
+                            className="px-6 py-3 bg-yellow-400 text-white rounded-full text-xl shadow-md"
+                        //onClick={handleSummarize}
+                        >
+                            요약하기
+                        </button>
+                    </div>
+                )}
+                <div className="relative">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={handleInputChange}
+                        placeholder="메시지를 입력하세요..."
+                        className="w-full p-5 text-xl border rounded-full focus:outline-none shadow-md pr-16 text-gray-500"
+                    />
+
+                    <button
+                        type="submit"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-yellow-400 text-white rounded-full flex items-center justify-center shadow-md"
+                    >
+                        <HiArrowUp className="h-5 w-5" />
+                    </button>
+                </div>
+            </div>
         </form>
     );
 };
