@@ -1,13 +1,17 @@
 import React from 'react';
-import Chatbot from './components/Chatbot';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Home from './pages/Home';
+import Chatbot from './pages/Chatbot';
 
 function App() {
-    return (
-        <div className="App">
-            <h1>AI 챗봇</h1>
-            <Chatbot /> {/* Chatbot 컴포넌트를 렌더링 */}
-        </div>
-    );
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="chatbot" element={<Chatbot />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
