@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { HiArrowUp } from "react-icons/hi";
+import { useNavigate } from 'react-router-dom';
 
 const Input = ({ messages, onSendMessage }) => {
     const [input, setInput] = useState('');
+    const navigate = useNavigate();
 
     const handleInputChange = (event) => {
         setInput(event.target.value);
@@ -24,14 +26,14 @@ const Input = ({ messages, onSendMessage }) => {
                         <button
                             type="button"
                             className="px-6 py-3 bg-yellow-400 text-white rounded-full text-xl shadow-md"
-                        //onClick={handleStopChat}
+                            onClick={() => navigate('/')}
                         >
                             대화 그만하기
                         </button>
                         <button
                             type="button"
                             className="px-6 py-3 bg-yellow-400 text-white rounded-full text-xl shadow-md"
-                        //onClick={handleSummarize}
+                            onClick={() => navigate('/')}
                         >
                             요약하기
                         </button>
