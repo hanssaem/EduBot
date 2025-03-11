@@ -2,7 +2,7 @@ import React from 'react';
 
 const Notebook = ({ date, topic, onClick }) => {
   return (
-    <div
+    <button
       className="relative w-52 h-64 bg-yellow-300 rounded-2xl shadow-md transition-transform duration-300 ease-in-out hover:translate-y-[-10px] hover:shadow-xl"
       onClick={() => onClick({ date, topic })}
     >
@@ -38,7 +38,7 @@ const Notebook = ({ date, topic, onClick }) => {
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
