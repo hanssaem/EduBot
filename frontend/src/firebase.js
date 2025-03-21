@@ -6,12 +6,12 @@ import { getAuth } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: 'AIzaSyBIUKDqrZZSOD5v5u1LBfYcNysb3K7XfYg',
-  authDomain: 'edubot-95c75.firebaseapp.com',
-  projectId: 'edubot-95c75',
-  storageBucket: 'edubot-95c75.firebasestorage.app',
-  messagingSenderId: '566005722042',
-  appId: '1:566005722042:web:03074f8d4b324319258b83',
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
