@@ -1,7 +1,7 @@
 import { SiProbot } from 'react-icons/si';
 import Notebook from '../components/Notebook';
 import NotebookDetail from '../components/NotebookDetail';
-import { PlusIcon } from '@heroicons/react/24/solid';
+import { BookOpenIcon, PlusIcon } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
@@ -11,16 +11,40 @@ export default function Home() {
   const [detailOpen, setDetailOpen] = useState(false);
 
   const notebooks = [
-    { date: '2025-03-07', topic: '리액트 기본' },
-    { date: '2025-03-06', topic: 'State Management' },
-    { date: '2025-03-05', topic: 'Tailwind Styling' },
-    { date: '2025-03-04', topic: 'API Integration' },
-    { date: '2025-03-04', topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ' },
-    { date: '2025-03-04', topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ' },
-    { date: '2025-03-04', topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ' },
-    { date: '2025-03-04', topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ' },
-    { date: '2025-03-04', topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ' },
-    { date: '2025-03-04', topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ' },
+    { date: '2025-03-07', topic: '리액트 기본', category: 'art' },
+    { date: '2025-03-06', topic: 'State Management', category: 'language' },
+    { date: '2025-03-05', topic: 'Tailwind Styling', category: 'history' },
+    { date: '2025-03-04', topic: 'API Integration', category: 'programming' },
+    {
+      date: '2025-03-04',
+      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
+      category: 'science',
+    },
+    {
+      date: '2025-03-04',
+      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
+      category: 'math',
+    },
+    {
+      date: '2025-03-04',
+      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
+      category: 'social',
+    },
+    {
+      date: '2025-03-04',
+      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
+      category: 'math',
+    },
+    {
+      date: '2025-03-04',
+      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
+      category: 'math',
+    },
+    {
+      date: '2025-03-04',
+      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
+      category: 'math',
+    },
   ];
 
   const handleNotebookClick = (notebook) => {
@@ -34,9 +58,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white items-center">
-      <nav className="w-full p-5 bg-[#1B3764] text-white text-center font-bold text-3xl flex items-center justify-center">
-        EduBot
-        <SiProbot className="ml-2 text-3xl" />
+      <nav className="w-full p-5 bg-[#1B3764] text-white flex items-center justify-between">
+        {/* 로고를 가운데 정렬 */}
+        <button
+          className="font-bold text-3xl flex-1 text-center ml-[62px] flex justify-center items-center"
+          onClick={() => navigate('/')}
+        >
+          EduBot
+          <SiProbot className="ml-2 text-3xl inline-block" />
+        </button>
+
+        {/* 로그인 버튼을 오른쪽으로 배치 */}
+        <button className="pr-5" onClick={() => navigate('/login')}>
+          로그인
+        </button>
       </nav>
 
       <div className="flex flex-col items-center justify-center w-full bg-[#1B3764] text-center py-20 gap-4 font-pretendard">
@@ -46,10 +81,10 @@ export default function Home() {
           AI와 대화하며 배우고, 자동으로 요약된 학습 기록을 언제든지 확인하세요.
         </p>
         <button
-          className="px-[50px] py-[20px] bg-yellow-400 rounded-3xl"
+          className="px-[40px] py-[18px] bg-yellow-400 rounded-3xl"
           onClick={() => navigate('/chatbot')}
         >
-          에듀봇과 공부하기
+          시작하기
         </button>
       </div>
 
@@ -58,11 +93,19 @@ export default function Home() {
 
         <div className="grid grid-cols-5 gap-10">
           <button
-            className="relative w-52 h-64 bg-gray-200 rounded-2xl shadow-md flex flex-col items-center justify-center cursor-pointer"
+            className="relative w-full h-64 bg-gradient-to-br from-blue-50 to-gray-100 rounded-lg border-2 border-dashed border-blue-400 shadow-md hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center"
             onClick={() => navigate('/chatbot')}
           >
-            <PlusIcon className="h-6 w-6 text-gray-500" />
-            <span className="text-gray-500 text-md font-semibold mt-2">
+            {/* 노트북 아이콘 */}
+            <div className="relative w-16 h-20 rounded shadow-md mb-3 flex items-center justify-center">
+              <BookOpenIcon className="h-10 w-10 text-blue-700 opacity-50" />
+              <div className="absolute w-8 h-8 rounded-full bg-blue-100 -bottom-4 -right-4 flex items-center justify-center">
+                <PlusIcon className="h-5 w-5 text-blue-700" />
+              </div>
+            </div>
+
+            {/* 텍스트 */}
+            <span className="text-blue-700 text-md font-medium mt-4">
               에듀봇과 공부하기
             </span>
           </button>
@@ -72,6 +115,7 @@ export default function Home() {
               key={index}
               date={notebook.date}
               topic={notebook.topic}
+              category={notebook.category}
               onClick={handleNotebookClick}
             />
           ))}
