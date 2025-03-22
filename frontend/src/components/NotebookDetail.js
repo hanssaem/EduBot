@@ -101,7 +101,7 @@ const NotebookDetail = ({ isOpen, onClose, notebook }) => {
 
   return (
     <div
-      className={`fixed top-0 right-0 w-1/2 h-full shadow-2xl transition-all duration-500 ease-out transform z-20 ${
+      className={`fixed top-0 right-0 w-1/2 h-full shadow-2xl transition-all duration-500 ease-out transform z-20 font-pretendard ${
         isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
       onTransitionEnd={() => {
