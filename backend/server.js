@@ -153,7 +153,6 @@ app.post('/api/summarize', async (req, res) => {
 
 /* ✅ 사용자 관련 API */
 // 📌 사용자 정보 저장 (Google 로그인 후)
-
 app.post("/api/auth/login", async (req, res) => {
     const { idToken } = req.body;
 
@@ -212,11 +211,11 @@ app.post('/api/notes', verifyToken, async (req, res) => {
     }
 });
 
-// 📌 특정 사용자의 노트 조회
+// 📌 특정 사용자의 노트 조회 (이메일 기반)
 app.get('/api/notes', verifyToken, async (req, res) => {
     try {
-        const userId = req.user.uid; // 로그인한 사용자 ID
-        const notes = await Note.find({ userId });
+        const userEmail = req.user.email; // 로그인한 사용자 이메일
+        const notes = await Note.find({ userEmail }); // 이메일로 조회
 
         res.status(200).json(notes);
     } catch (error) {
@@ -224,6 +223,7 @@ app.get('/api/notes', verifyToken, async (req, res) => {
         res.status(500).json({ error: '노트 조회 실패' });
     }
 });
+
 
 // 📌 노트 삭제
 app.delete('/api/notes/:id', verifyToken, async (req, res) => {
