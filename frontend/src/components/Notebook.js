@@ -1,10 +1,10 @@
 import React from 'react';
 
-const Notebook = ({ date, topic, onClick }) => {
+const Notebook = ({ createdAt, title, onClick }) => {
   return (
     <button
       className="relative w-52 h-64 bg-yellow-300 rounded-2xl shadow-md transition-transform duration-300 ease-in-out hover:translate-y-[-10px] hover:shadow-xl"
-      onClick={() => onClick({ date, topic })}
+      onClick={() => onClick({ createdAt, title })}
     >
       {/* 왼쪽 파란색 접힌 부분 */}
       <div className="absolute top-0 left-0 w-8 h-full bg-blue-400 rounded-l-2xl"></div>
@@ -30,11 +30,11 @@ const Notebook = ({ date, topic, onClick }) => {
       {/* 공책 본체 */}
       <div className="flex flex-col items-center justify-center h-full ml-8 font-pretendard">
         <div className="relative bg-yellow-100 w-36 min-h-24 p-4 rounded-md flex flex-col items-center justify-center shadow group">
-          <h2 className="text-lg font-bold text-gray-700 text-center line-clamp-2 text-ellipsis">
-            {topic}
+          <h2 className="text-md font-bold text-gray-700 text-center line-clamp-2 text-ellipsis">
+            {title}
           </h2>
           <div className="text-sm mt-2 text-gray-600">
-            <p>{date}</p>
+            <p>{createdAt.substr(0, 10)}</p>
           </div>
         </div>
       </div>
