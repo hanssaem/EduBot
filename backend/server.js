@@ -43,19 +43,26 @@ const verifyToken = async (req, res, next) => {
 const apiKey = process.env.OPENAI_API_KEY;
 const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
 
-app.post('/api/chat', async (req, res) => {
-    const { prompt } = req.body;
+
+app.post("/api/chat", async (req, res) => {
+    const { messages } = req.body; // 🔥 `prompt` 대신 `messages` 배열 받기
+
+    // 🔥 OpenAI가 이해할 수 있도록 messages 배열을 변환
+    const formattedMessages = messages.map((msg) => ({
+        role: msg.sender === "User" ? "user" : "assistant",
+        content: msg.message,
+    }));
 
     const requestOptions = {
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
         },
         data: {
             model: "gpt-3.5-turbo",
-            messages: [{ role: "user", content: prompt }],
+            messages: formattedMessages, // 🔥 전체 히스토리 전달
             temperature: 0.8,
-            max_tokens: 1024,
+            max_tokens: 2048,
         },
     };
 
@@ -64,12 +71,85 @@ app.post('/api/chat', async (req, res) => {
             headers: requestOptions.headers,
         });
         const aiResponse = response.data.choices[0].message.content;
+
+        // 🔥 챗봇 응답을 클라이언트에 전달
         res.json({ reply: aiResponse });
     } catch (error) {
-        console.error('OpenAI API 호출 중 오류 발생:', error);
-        res.status(500).send('Error from OpenAI API');
+        console.error("OpenAI API 호출 중 오류 발생:", error);
+        res.status(500).send("Error from OpenAI API");
     }
 });
+
+app.post('/api/summarize', async (req, res) => {
+    const { messages, prompt, email } = req.body;
+
+    if (!messages || messages.length === 0) {
+        return res.status(400).json({ error: "대화 내용이 없습니다." });
+    }
+
+    const formattedMessages = messages.map(msg => ({
+        role: msg.sender === "User" ? "user" : "assistant",
+        content: msg.message
+    }));
+
+    // GPT 프롬프트 설정 (요약 + 제목 생성)
+    const summaryPrompt = `
+    다음 대화를 학습 노트처럼 정리해줘. 핵심 내용을 길고 상세하게 요약하고, 
+    가장 적절한 제목도 짧고 직관적으로 제안해줘.
+    
+    ---
+    ${formattedMessages.map(m => `${m.role}: ${m.content}`).join("\n")}
+    
+    --- 
+    제목: (한 줄로 짧게)
+    요약:
+    `;
+
+    const requestOptions = {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+        },
+        data: {
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: summaryPrompt }],
+            temperature: 0.7,
+            max_tokens: 2048,
+        },
+    };
+
+    try {
+        // OpenAI API 호출
+        const response = await axios.post(apiEndpoint, requestOptions.data, {
+            headers: requestOptions.headers,
+        });
+
+        const aiResponse = response.data.choices[0].message.content;
+
+        // 응답에서 요약과 제목 분리
+        const match = aiResponse.match(/제목:\s*(.+)\n요약:\s*(.+)/s);
+        if (!match) {
+            return res.status(500).json({ error: "응답에서 제목과 요약을 추출하지 못했습니다." });
+        }
+
+        const title = match[1].trim();
+        const summary = match[2].trim();
+
+        // DB 저장
+        await Note.create({
+            userId: email,
+            title: title,
+            content: summary,
+            createdAt: new Date(),
+        });
+
+        res.json({ message: "요약이 저장되었습니다.", title, summary });
+    } catch (error) {
+        console.error("OpenAI API 오류:", error);
+        res.status(500).json({ error: "요약 생성 중 오류 발생" });
+    }
+});
+
 
 /* ✅ 사용자 관련 API */
 // 📌 사용자 정보 저장 (Google 로그인 후)

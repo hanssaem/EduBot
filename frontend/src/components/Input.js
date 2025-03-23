@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { HiArrowUp } from "react-icons/hi";
 import { useNavigate } from 'react-router-dom';
 
-const Input = ({ messages, onSendMessage }) => {
+const Input = ({ messages, onSendMessage, onSummarize }) => {
     const [input, setInput] = useState('');
     const navigate = useNavigate();
 
@@ -33,7 +33,7 @@ const Input = ({ messages, onSendMessage }) => {
                         <button
                             type="button"
                             className="px-6 py-3 bg-yellow-400 text-white rounded-full text-xl shadow-md"
-                            onClick={() => navigate('/')}
+                            onClick={onSummarize}
                         >
                             요약하기
                         </button>
