@@ -1,79 +1,98 @@
 import { SiProbot } from 'react-icons/si';
-import Notebook from '../components/Notebook';
-import NotebookDetail from '../components/NotebookDetail';
-import { BookOpenIcon, PlusIcon } from '@heroicons/react/24/solid';
+import { FolderPlusIcon } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+
+import Modal from '../components/Modal';
+import Folder from '../components/Folder';
+import Notebook from '../components/Notebook';
+import NotebookDetail from '../components/NotebookDetail';
 
 export default function Home() {
   const navigate = useNavigate();
   const [selectedNotebook, setSelectedNotebook] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [user, setUser] = useState(null); // 🔥 로그인한 유저 정보 저장
+  const [user, setUser] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [items, setItems] = useState([]); // Combined array for folders and notebooks
+  const [folderName, setFolderName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Firebase 인증 객체 가져오기
   const auth = getAuth();
 
-  // 🔥 로그인 상태 감지하여 사용자 정보 업데이트
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken(); // Firebase 인증 토큰 가져오기
+          const response = await axios.get('http://localhost:5000/api/notes', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          setItems(response.data); // 가져온 노트 데이터로 상태 업데이트
+        } catch (err) {
+          console.error('노트 가져오기 실패:', err);
+          setError('노트를 불러오는 데 실패했습니다.');
+        }
+      }
+
+      setLoading(false);
     });
 
-    return () => unsubscribe(); // 컴포넌트 언마운트 시 구독 해제
-  }, []);
+    return () => unsubscribe();
+  }, [auth]);
 
   // 🔥 로그아웃 함수
   const handleLogout = async () => {
     try {
       await signOut(auth);
       setUser(null);
-      navigate('/login'); // 로그아웃 후 로그인 페이지로 이동
+      navigate('/login');
     } catch (error) {
       console.error('로그아웃 실패:', error);
     }
   };
 
-  const notebooks = [
-    { date: '2025-03-07', topic: '리액트 기본', category: 'art' },
-    { date: '2025-03-06', topic: 'State Management', category: 'language' },
-    { date: '2025-03-05', topic: 'Tailwind Styling', category: 'history' },
-    { date: '2025-03-04', topic: 'API Integration', category: 'programming' }, {
-      date: '2025-03-04',
-      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
-      category: 'science',
-    },
-    {
-      date: '2025-03-04',
-      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
-      category: 'math',
-    },
-    {
-      date: '2025-03-04',
-      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
-      category: 'social',
-    },
-    {
-      date: '2025-03-04',
-      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
-      category: 'math',
-    },
-    {
-      date: '2025-03-04',
-      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
-      category: 'math',
-    },
-    {
-      date: '2025-03-04',
-      topic: '이러나저라나 이러나 저러러나라날 ㅏ앙ㅇ',
-      category: 'math',
-    },
-  ];
+  const handleStartClick = () => {
+    if (user) {
+      navigate('/chatbot');
+    } else {
+      // 로그인 후 돌아올 페이지 정보를 state로 전달
+      navigate('/login', { state: { from: '/chatbot' } });
+    }
+  };
 
-  const handleNotebookClick = (notebook) => {
-    setSelectedNotebook(notebook);
-    setDetailOpen(true);
+  const handleCreateFolder = () => {
+    if (folderName.trim() === '') {
+      alert('폴더명을 입력해주세요!');
+      return;
+    }
+
+    const newFolder = {
+      type: 'folder',
+      name: folderName,
+    };
+
+    // Add new folder to the beginning of the items array
+    setItems([newFolder, ...items]);
+    setIsOpen(false);
+    setFolderName('');
+  };
+
+  const handleItemClick = (item) => {
+    if (item.type === 'folder') {
+      console.log('Folder clicked:', item.name);
+    } else {
+      setSelectedNotebook(item);
+      setDetailOpen(true);
+    }
   };
 
   const handleCloseDetail = () => {
@@ -82,26 +101,24 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white items-center">
-      {/* 🔥 네비게이션 바 */}
-      <nav className="w-full p-5 bg-[#1B3764] text-white flex items-center justify-between">
-        {/* 로고 */}
+      <nav className="w-full p-5 bg-[rgb(27,55,100)] text-white flex items-center">
+        <div className="flex-1"></div>
+
         <button
-          className="font-bold text-3xl flex-1 text-center ml-[62px] flex justify-center items-center"
+          className="font-bold text-3xl flex items-center justify-center"
           onClick={() => navigate('/')}
         >
           EduBot
           <SiProbot className="ml-2 text-3xl inline-block" />
         </button>
 
-        {/* 🔥 로그인 여부에 따라 표시 */}
-        <div className="pr-5 flex items-center gap-4">
+        <div className="flex-1 flex justify-end pr-5 items-center gap-4">
           {user ? (
             <>
-              {/* 로그인한 경우 사용자 이메일 표시 */}
               <span className="text-sm">{user.email}</span>
               <button
                 onClick={handleLogout}
-                className="bg-red-500 text-white px-3 py-1 rounded"
+                className="bg-red-500 text-white text-md px-3 py-1 rounded"
               >
                 로그아웃
               </button>
@@ -112,7 +129,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* 🔥 학습 메이트 안내 섹션 */}
+      {/* 학습 메이트 안내 섹션 */}
       <div className="flex flex-col items-center justify-center w-full bg-[#1B3764] text-center py-20 gap-4 font-pretendard">
         <h1 className="text-4xl font-bold text-white">AI 학습 메이트</h1>
         <div className="w-16 h-1 bg-yellow-400 mx-auto my-4"></div>
@@ -121,42 +138,67 @@ export default function Home() {
         </p>
         <button
           className="px-[40px] py-[18px] bg-yellow-400 rounded-3xl"
-          onClick={() => navigate('/chatbot')}
+          onClick={handleStartClick}
         >
-          시작하기
+          {user ? '에듀봇과 공부하기' : '로그인하고 시작하기'}
         </button>
       </div>
 
-      {/* 🔥 학습 노트 목록 */}
+      {/* 학습 노트 및 폴더 목록 */}
       <div className="flex flex-col flex-1 pt-10 pb-10 mt-8 w-[1200px]">
         <h1 className="text-xl font-bold mb-6">학습 요약본</h1>
         <div className="grid grid-cols-5 gap-10">
           <button
             className="relative w-full h-64 bg-gradient-to-br from-blue-50 to-gray-100 rounded-lg border-2 border-dashed border-blue-400 shadow-md hover:shadow-lg transition-all duration-300 flex flex-col items-center justify-center"
-            onClick={() => navigate('/chatbot')}
+            onClick={() => setIsOpen(true)}
           >
-            <div className="relative w-16 h-20 rounded shadow-md mb-3 flex items-center justify-center">
-              <BookOpenIcon className="h-10 w-10 text-blue-700 opacity-50" />
-              <div className="absolute w-8 h-8 rounded-full bg-blue-100 -bottom-4 -right-4 flex items-center justify-center">
-                <PlusIcon className="h-5 w-5 text-blue-700" />
-              </div>
-            </div>
-            <span className="text-blue-700 text-md font-medium mt-4">
-              에듀봇과 공부하기
+            <FolderPlusIcon className="h-10 w-10 text-[#1B3764]" />
+            <span className="text-[#1B3764] text-md font-medium mt-4">
+              폴더 생성하기
             </span>
           </button>
 
-          {notebooks.map((notebook, index) => (
-            <Notebook
-              key={index}
-              date={notebook.date}
-              topic={notebook.topic}
-              category={notebook.category}
-              onClick={handleNotebookClick}
-            />
-          ))}
+          {items.map((item, index) =>
+            item.type === 'folder' ? (
+              <Folder
+                key={`folder-${index}`}
+                name={item.name}
+                onClick={() => handleItemClick(item)}
+              />
+            ) : (
+              <Notebook
+                key={item._id || index}
+                createdAt={item.createdAt}
+                title={item.title}
+                category={item.category}
+                onClick={() => handleItemClick(item)}
+              />
+            )
+          )}
         </div>
       </div>
+
+      <Modal
+        isOpen={isOpen}
+        setIsOpen={setIsOpen}
+        title="새 폴더 생성"
+        content={
+          <div className="flex flex-col gap-4">
+            <p className="text-gray-600 text-sm">
+              생성할 폴더 이름을 입력하세요.
+            </p>
+            <input
+              type="text"
+              value={folderName}
+              onChange={(e) => setFolderName(e.target.value)}
+              className="input input-bordered w-full p-2 border rounded-md"
+              placeholder="폴더 이름"
+            />
+          </div>
+        }
+        confirmText="확인"
+        onConfirm={handleCreateFolder}
+      />
 
       {/* Notebook Detail Panel */}
       <NotebookDetail
