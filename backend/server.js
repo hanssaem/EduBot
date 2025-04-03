@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const User = require('./models/User'); // ✅ User 모델 추가
 const Note = require('./models/Note'); // ✅ Note 모델 추가
+const Folder = require("./models/Folder");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -242,6 +243,105 @@ app.delete('/api/notes/:id', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('노트 삭제 중 오류:', error);
     res.status(500).json({ error: '노트 삭제 실패' });
+  }
+});
+
+// 📌 노트 수정
+app.patch('/api/notes/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params; // 📌 URL에서 노트 ID 추출
+    const { title, content } = req.body; // 📌 수정할 데이터 가져오기
+    const userId = req.user.uid; // 📌 Firebase UID 확인 (로그인한 사용자)
+
+    // 1️⃣ 노트가 존재하는지 확인
+    const note = await Note.findById(id);
+    if (!note) {
+      return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
+    }
+
+    // 2️⃣ 노트 작성자와 로그인한 사용자가 일치하는지 확인
+    if (note.userId !== userId) {
+      return res.status(403).json({ error: '수정 권한이 없습니다.' });
+    }
+
+    // 3️⃣ 제목이나 내용이 제공되었는지 확인하고 업데이트
+    if (title) note.title = title;
+    if (content) note.content = content;
+    await note.save(); // MongoDB에 업데이트 저장
+
+    res.status(200).json({ message: '노트 수정 완료', note });
+  } catch (error) {
+    console.error('노트 수정 중 오류:', error);
+    res.status(500).json({ error: '노트 수정 실패' });
+  }
+});
+
+//특정 폴더에 속한 노트 조회 API
+app.get('/api/folders/:folderId/notes', verifyToken, async (req, res) => {
+  try {
+    const { folderId } = req.params; // 📌 URL에서 폴더 ID 가져오기
+    const userId = req.user.uid; // 📌 로그인한 사용자 ID 확인 (Firebase UID)
+
+    // 1️⃣ 폴더 존재 여부 확인
+    const folder = await Folder.findById(folderId);
+    if (!folder) {
+      return res.status(404).json({ error: '폴더를 찾을 수 없습니다.' });
+    }
+
+    // 2️⃣ 폴더 소유자가 로그인한 사용자와 일치하는지 확인
+    if (folder.userId !== userId) {
+      return res.status(403).json({ error: '폴더 접근 권한이 없습니다.' });
+    }
+
+    // 3️⃣ 해당 폴더에 속한 노트 조회
+    const notes = await Note.find({ folderId, userId });
+
+    res.status(200).json({ message: '폴더 내 노트 조회 성공', notes });
+  } catch (error) {
+    console.error('폴더별 노트 조회 오류:', error);
+    res.status(500).json({ error: '폴더별 노트 조회 실패' });
+  }
+});
+
+//폴더 이동 api
+app.patch('/api/notes/:noteId/move', verifyToken, async (req, res) => {
+  try {
+    const { noteId } = req.params; // 📌 이동할 노트 ID 가져오기
+    const { targetFolderId } = req.body; // 📌 새로운 폴더 ID 가져오기
+    const userId = req.user.uid; // 📌 로그인한 사용자 ID 확인 (Firebase UID)
+
+    // 1️⃣ 노트가 존재하는지 확인
+    const note = await Note.findById(noteId);
+    if (!note) {
+      return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
+    }
+
+    // 2️⃣ 노트의 소유자가 로그인한 사용자와 일치하는지 확인
+    if (note.userId !== userId) {
+      return res.status(403).json({ error: '이동 권한이 없습니다.' });
+    }
+
+    // 3️⃣ 대상 폴더가 존재하는지 확인
+    if (targetFolderId) {
+      const targetFolder = await Folder.findById(targetFolderId);
+      if (!targetFolder) {
+        return res.status(404).json({ error: '이동할 폴더를 찾을 수 없습니다.' });
+      }
+
+      // 4️⃣ 폴더 소유자가 동일한 사용자인지 확인
+      if (targetFolder.userId !== userId) {
+        return res.status(403).json({ error: '이동할 폴더에 대한 접근 권한이 없습니다.' });
+      }
+    }
+
+    // 5️⃣ 노트의 folderId 업데이트
+    note.folderId = targetFolderId || null; // 📌 null이면 폴더 없음 상태로 이동
+    await note.save();
+
+    res.status(200).json({ message: '노트 폴더 이동 완료', note });
+  } catch (error) {
+    console.error('노트 폴더 이동 중 오류:', error);
+    res.status(500).json({ error: '노트 폴더 이동 실패' });
   }
 });
 
