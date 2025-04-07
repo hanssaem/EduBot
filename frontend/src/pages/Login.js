@@ -1,7 +1,6 @@
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useLocation, useNavigate } from 'react-router-dom';
-import googleLoginImg from '../assets/google_social_login.png';
 import { SiProbot } from 'react-icons/si';
 
 export default function Login() {
@@ -32,6 +31,7 @@ export default function Login() {
       navigate(destination);
     } catch (err) {
       console.error('❌ 로그인 실패:', err);
+      alert('로그인에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
