@@ -1,5 +1,9 @@
 import { SiProbot } from 'react-icons/si';
-import { FolderPlusIcon } from '@heroicons/react/24/solid';
+import {
+  BellIcon,
+  FolderPlusIcon,
+  Squares2X2Icon,
+} from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -9,12 +13,14 @@ import Modal from '../components/Modal';
 import Folder from '../components/Folder';
 import Notebook from '../components/Notebook';
 import NotebookDetail from '../components/NotebookDetail';
+import ReminderCard from '../components/ReminderCard';
 
 export default function Home() {
   const navigate = useNavigate();
   const [selectedNotebook, setSelectedNotebook] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [userToken, setUserToken] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [items, setItems] = useState([]); // Combined array for folders and notebooks
   const [folderName, setFolderName] = useState('');
@@ -30,6 +36,7 @@ export default function Home() {
       if (currentUser) {
         try {
           const token = await currentUser.getIdToken(); // Firebase 인증 토큰 가져오기
+          setUserToken(token);
           const response = await axios.get('http://localhost:5000/api/notes', {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -54,7 +61,7 @@ export default function Home() {
     try {
       await signOut(auth);
       setUser(null);
-      navigate('/login');
+      setItems([]);
     } catch (error) {
       console.error('로그아웃 실패:', error);
     }
@@ -80,7 +87,6 @@ export default function Home() {
       name: folderName,
     };
 
-    // Add new folder to the beginning of the items array
     setItems([newFolder, ...items]);
     setIsOpen(false);
     setFolderName('');
@@ -105,12 +111,15 @@ export default function Home() {
         <div className="flex-1"></div>
 
         <button
-          className="font-bold text-3xl flex items-center justify-center"
+          className="font-bold text-3xl flex items-start justify-center"
           onClick={() => navigate('/')}
         >
           EduBot
           <SiProbot className="ml-2 text-3xl inline-block" />
         </button>
+
+        {/* <BellIcon className="h-5 w-5" />
+        <Squares2X2Icon className="h-5 w-5" /> */}
 
         <div className="flex-1 flex justify-end pr-5 items-center gap-4">
           {user ? (
@@ -124,7 +133,11 @@ export default function Home() {
               </button>
             </>
           ) : (
-            <button onClick={() => navigate('/login')}>로그인</button>
+            <button
+              onClick={() => navigate('/login', { state: { from: '/' } })}
+            >
+              로그인
+            </button>
           )}
         </div>
       </nav>
@@ -144,8 +157,10 @@ export default function Home() {
         </button>
       </div>
 
+      <ReminderCard notes={items} />
+
       {/* 학습 노트 및 폴더 목록 */}
-      <div className="flex flex-col flex-1 pt-10 pb-10 mt-8 w-[1200px]">
+      <div className="flex flex-col flex-1 pb-10 mt-8 w-[1200px]">
         <h1 className="text-xl font-bold mb-6">학습 요약본</h1>
         <div className="grid grid-cols-5 gap-10">
           <button
@@ -205,6 +220,7 @@ export default function Home() {
         isOpen={detailOpen}
         onClose={handleCloseDetail}
         notebook={selectedNotebook || {}}
+        userToken={userToken}
       />
 
       {/* Semi-transparent overlay when detail is open */}
