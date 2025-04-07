@@ -1,17 +1,115 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/solid';
+import {
+  XMarkIcon,
+  PencilIcon,
+  TrashIcon,
+  CheckIcon,
+} from '@heroicons/react/24/solid';
 
-const NotebookDetail = ({ isOpen, onClose, notebook }) => {
-  // 애니메이션 상태
+const NotebookDetail = ({ isOpen, onClose, notebook, userToken }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedNotebook, setEditedNotebook] = useState({
+    title: '',
+    content: '',
+  });
+
+  const updateNote = async (noteId, newTitle, newContent, userToken) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/notes/${noteId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${userToken}`, // 🔐 인증 토큰 포함
+          },
+          body: JSON.stringify({ title: newTitle, content: newContent }), // 📝 수정할 데이터
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('노트 수정 실패:', error);
+    }
+  };
+
+  const deleteNote = async (noteId, userToken) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/notes/${noteId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('노트 삭제 실패:', error);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
       setIsAnimating(true);
+      setEditedNotebook({
+        title: notebook?.title || '',
+        content: notebook?.content || '',
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, notebook]);
 
-  // 패널이 닫혀있고 애니메이션 중이 아니면 렌더링하지 않음
+  const toggleEditMode = () => {
+    if (isEditing) {
+      // 편집 모드 종료 시 원상태로 복구
+      setEditedNotebook({
+        title: notebook?.title || '',
+        content: notebook?.content || '',
+      });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleSave = () => {
+    updateNote(
+      notebook._id,
+      editedNotebook.title,
+      editedNotebook.content,
+      userToken
+    );
+    setIsEditing(false);
+    notebook.title = editedNotebook.title;
+    notebook.content = editedNotebook.content;
+  };
+
+  // 삭제 확인
+  const handleDelete = () => {
+    if (window.confirm('정말로 이 노트를 삭제하시겠습니까?')) {
+      deleteNote(notebook._id, userToken);
+      onClose();
+    }
+  };
+
+  // 입력 필드 변경 처리
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setEditedNotebook((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   if (!isOpen && !isAnimating) return null;
 
   return (
@@ -67,19 +165,69 @@ const NotebookDetail = ({ isOpen, onClose, notebook }) => {
         <div className="relative z-40 p-8 pl-20 min-h-full">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-medium text-gray-700">요약본</h2>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-200 transition-colors"
-              aria-label="Close"
-            >
-              <XMarkIcon className="h-6 w-6 text-gray-500" />
-            </button>
+            <div className="flex space-x-2">
+              {isEditing ? (
+                <>
+                  {/* 저장 버튼 */}
+                  <button
+                    onClick={handleSave}
+                    className="p-2 rounded-full hover:bg-green-100 text-green-600 transition-colors"
+                  >
+                    <CheckIcon className="h-5 w-5" />
+                  </button>
+                  {/* 취소 버튼 */}
+                  <button
+                    onClick={toggleEditMode}
+                    className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-colors"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* 편집 버튼 */}
+                  <button
+                    onClick={toggleEditMode}
+                    className="p-2 rounded-full hover:bg-blue-100 text-blue-600 transition-colors"
+                  >
+                    <PencilIcon className="h-5 w-5" />
+                  </button>
+                  {/* 삭제 버튼 */}
+                  <button
+                    onClick={handleDelete}
+                    className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-colors"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+              {/* 닫기 버튼 */}
+              {!isEditing && (
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5 text-gray-500" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="mb-6 pb-3 border-b border-gray-300">
-            <h3 className="text-xl font-medium text-gray-800">
-              {notebook.title || '제목 없음'}
-            </h3>
+            {isEditing ? (
+              <input
+                type="text"
+                name="title"
+                value={editedNotebook.title}
+                onChange={handleChange}
+                className="w-full text-xl font-medium text-gray-800 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none py-1"
+                placeholder="제목을 입력하세요"
+              />
+            ) : (
+              <h3 className="text-xl font-medium text-gray-800">
+                {notebook.title || '제목 없음'}
+              </h3>
+            )}
             <p className="text-gray-500 text-sm mt-1">
               {notebook.createdAt
                 ? new Date(notebook.createdAt).toLocaleDateString()
@@ -87,16 +235,33 @@ const NotebookDetail = ({ isOpen, onClose, notebook }) => {
             </p>
           </div>
 
-          {/* 콘텐츠 표시 영역 - 문단 나누기 적용 */}
+          {/* 콘텐츠 표시 영역 */}
           <div className="space-y-6 pb-8">
-            {notebook.content ? (
-              notebook.content.split('\n\n').map((paragraph, idx) => (
-                <p key={idx} className="text-gray-600 leading-relaxed">
-                  {paragraph}
-                </p>
-              ))
+            {isEditing ? (
+              <textarea
+                name="content"
+                value={editedNotebook.content}
+                onChange={handleChange}
+                className="w-full h-96 bg-transparent border border-gray-300 rounded p-3 focus:border-blue-500 focus:outline-none text-gray-600 leading-relaxed resize-none"
+                placeholder="내용을 입력하세요"
+                style={{
+                  backgroundImage: `linear-gradient(transparent, transparent calc(1.5em - 1px), #e6e6e6 0px)`,
+                  backgroundSize: '100% 1.5em',
+                  lineHeight: '1.5em',
+                }}
+              />
             ) : (
-              <p className="text-gray-600 italic">내용이 없습니다.</p>
+              <>
+                {notebook.content ? (
+                  notebook.content.split('\n').map((paragraph, idx) => (
+                    <p key={idx} className="text-gray-600 leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-gray-600 italic">내용이 없습니다.</p>
+                )}
+              </>
             )}
           </div>
         </div>
