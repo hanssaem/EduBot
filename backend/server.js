@@ -95,8 +95,13 @@ app.post('/api/summarize', async (req, res) => {
 
   // GPT 프롬프트 설정 (요약 + 제목 생성)
   const summaryPrompt = `
-    다음 대화를 학습 노트처럼 정리해줘. 핵심 내용을 길고 상세하게 요약하고, 
-    가장 적절한 제목도 짧고 직관적으로 제안해줘.
+    다음 대화를 학습 노트처럼 정리해줘.
+
+    📌 **요약 지침**:
+    1. **핵심 내용만 요약**하고 불필요한 대화는 제외해줘.
+    2. 중요한 개념이나 정보는 **항목( - ) 형태로 정리**해줘.
+    3. 요약은 **명확하고 자세하게** 작성해줘.
+    4. 대화를 대표하는 **짧고 직관적인 제목**을 제안해줘.
     
     ---
     ${formattedMessages.map((m) => `${m.role}: ${m.content}`).join('\n')}
@@ -199,7 +204,7 @@ app.get('/api/users/:id', verifyToken, async (req, res) => {
 app.post('/api/notes', verifyToken, async (req, res) => {
   try {
     const { title, content } = req.body;
-    const userId = req.user.uid; // Firebase UID
+    const userId = req.user.email; // Firebase UID
 
     if (!title || !content)
       return res.status(400).json({ error: '모든 필드를 입력해주세요.' });
@@ -235,7 +240,7 @@ app.delete('/api/notes/:id', verifyToken, async (req, res) => {
 
     if (!note)
       return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
-    if (note.userId !== req.user.uid)
+    if (note.userId !== req.user.email)
       return res.status(403).json({ error: '권한이 없습니다.' });
 
     await Note.findByIdAndDelete(id);
@@ -251,7 +256,7 @@ app.patch('/api/notes/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params; // 📌 URL에서 노트 ID 추출
     const { title, content } = req.body; // 📌 수정할 데이터 가져오기
-    const userId = req.user.uid; // 📌 Firebase UID 확인 (로그인한 사용자)
+    const userId = req.user.email; // 📌 Firebase UID 확인 (로그인한 사용자)
 
     // 1️⃣ 노트가 존재하는지 확인
     const note = await Note.findById(id);
@@ -276,11 +281,35 @@ app.patch('/api/notes/:id', verifyToken, async (req, res) => {
   }
 });
 
+// 📁 폴더 생성 API
+app.post('/api/folders', verifyToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    const userId = req.user.email;
+
+    if (!name) {
+      return res.status(400).json({ error: '폴더 이름을 입력해주세요.' });
+    }
+
+    const newFolder = new Folder({
+      userId,
+      name,
+    });
+
+    await newFolder.save();
+    res.status(201).json({ message: '폴더 생성 성공', folder: newFolder });
+  } catch (error) {
+    console.error('폴더 생성 중 오류:', error);
+    res.status(500).json({ error: '폴더 생성 실패' });
+  }
+});
+
+
 //특정 폴더에 속한 노트 조회 API
 app.get('/api/folders/:folderId/notes', verifyToken, async (req, res) => {
   try {
     const { folderId } = req.params; // 📌 URL에서 폴더 ID 가져오기
-    const userId = req.user.uid; // 📌 로그인한 사용자 ID 확인 (Firebase UID)
+    const userId = req.user.email; // 📌 로그인한 사용자 ID 확인 (Firebase UID)
 
     // 1️⃣ 폴더 존재 여부 확인
     const folder = await Folder.findById(folderId);
@@ -308,7 +337,7 @@ app.patch('/api/notes/:noteId/move', verifyToken, async (req, res) => {
   try {
     const { noteId } = req.params; // 📌 이동할 노트 ID 가져오기
     const { targetFolderId } = req.body; // 📌 새로운 폴더 ID 가져오기
-    const userId = req.user.uid; // 📌 로그인한 사용자 ID 확인 (Firebase UID)
+    const userId = req.user.email; // 📌 로그인한 사용자 ID 확인 (Firebase UID)
 
     // 1️⃣ 노트가 존재하는지 확인
     const note = await Note.findById(noteId);
