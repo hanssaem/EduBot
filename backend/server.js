@@ -385,50 +385,63 @@ app.patch('/api/notes/:noteId/move', verifyToken, async (req, res) => {
 app.get("/api/review-notes", verifyToken, async (req, res) => {
   try {
     const userId = req.user.email;
+    const now = new Date();
 
-    const today = new Date();
+    const notes = await Note.find({ userId });
 
-    // 🔍 조건: 아직 확인하지 않았고, createdAt + 주기 ≤ 오늘
-    const notes = await Note.find({
-      userId,
-      checked: false,
-      $expr: {
-        $lte: [
-          { $add: ["$createdAt", { $multiply: ["$reviewInterval", 24 * 60 * 60 * 1000] }] },
-          today,
-        ],
-      },
+    const dueNotes = notes.filter(note => {
+      const { reviewSchedule } = note;
+      if (!reviewSchedule || reviewSchedule.length === 0) return false;
+
+      const next = reviewSchedule[0]; // ✅ 가장 가까운 복습 일정 하나만 검사
+      return next <= now; // ✅ 현재 시간보다 같거나 이전이면 복습 대상
     });
 
-    res.status(200).json(notes);
+    res.status(200).json(dueNotes);
   } catch (error) {
     console.error("복습 노트 조회 오류:", error);
     res.status(500).json({ error: "복습 노트 조회 실패" });
   }
 });
 
+
 // ✅ 특정 노트 복습 완료 처리
 app.patch("/api/review-notes/:id/check", verifyToken, async (req, res) => {
   try {
-    const noteId = req.params.id;
     const userId = req.user.email;
+    const noteId = req.params.id;
+    const now = new Date();
 
     const note = await Note.findOne({ _id: noteId, userId });
-
     if (!note) {
       return res.status(404).json({ error: "노트를 찾을 수 없습니다." });
     }
 
-    note.checked = true;
-    await note.save();
+    const { reviewSchedule } = note;
+    if (!reviewSchedule || reviewSchedule.length === 0) {
+      return res.status(200).json({ message: "복습 일정이 모두 완료되었습니다.", note });
+    }
 
-    res.status(200).json({ message: "복습 완료 표시됨", note });
+    const nextReviewDate = reviewSchedule[0];
+
+    if (nextReviewDate <= now) {
+      // ✅ 복습 완료: 이전 날짜들은 모두 제거
+      note.reviewSchedule = reviewSchedule.filter(date => date > nextReviewDate);
+      await note.save();
+
+      return res.status(200).json({
+        message: "복습 완료 처리됨",
+        reviewedDate: nextReviewDate,
+        note
+      });
+    } else {
+      return res.status(400).json({ error: "아직 복습할 시기가 되지 않았습니다." });
+    }
   } catch (error) {
     console.error("복습 체크 오류:", error);
     res.status(500).json({ error: "복습 체크 실패" });
   }
 });
-
 
 // ✅ 서버 실행
 app.listen(port, () => {
