@@ -3,35 +3,35 @@ import Message from "../components/Message";
 import Input from "../components/Input";
 import { SiProbot } from "react-icons/si";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([]); // 대화 히스토리 저장
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // ✅ 로딩 상태
   const messagesEndRef = useRef(null);
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
-  // ✅ Firebase 인증 객체 가져오기
+
   const auth = getAuth();
 
-  // 🔥 로그인 상태 감지하여 사용자 정보 업데이트
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);  // ✅ 로그인한 사용자를 상태에 저장
+      setUser(currentUser);
     });
 
-    return () => unsubscribe(); // 🔄 구독 해제 (메모리 누수 방지)
+    return () => unsubscribe();
   }, []);
 
   const addMessage = (sender, message) => {
     setMessages((prevMessages) => [...prevMessages, { sender, message }]);
   };
 
-  // 메시지 전송 핸들러 (대화 히스토리 포함)
   const handleSendMessage = async (message) => {
     const userMessage = { sender: "User", message };
-    const updatedMessages = [...messages, userMessage]; // 새로운 대화 히스토리
-
-    setMessages(updatedMessages); // 상태 업데이트
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
 
     try {
       const response = await fetch("http://localhost:5000/api/chat", {
@@ -39,13 +39,12 @@ const Chatbot = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ messages: updatedMessages }), // 🔥 대화 히스토리 전달
+        body: JSON.stringify({ messages: updatedMessages }),
       });
 
       const data = await response.json();
       const botMessage = { sender: "Chatbot", message: data.reply };
-
-      setMessages((prevMessages) => [...prevMessages, botMessage]); // 응답 추가
+      setMessages((prevMessages) => [...prevMessages, botMessage]);
     } catch (error) {
       console.error("Error:", error);
     }
@@ -58,32 +57,38 @@ const Chatbot = () => {
     }
 
     const summaryPrompt = "지금까지의 대화를 최대한 상세하고 길게 요약해줘. 학습노트처럼 정리해줘.";
+    setIsLoading(true); // ✅ 로딩 시작
 
-    const response = await fetch("http://localhost:5000/api/summarize", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ messages, prompt: summaryPrompt, email: user.email }),
-    });
+    try {
+      const response = await fetch("http://localhost:5000/api/summarize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages, prompt: summaryPrompt, email: user.email }),
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      alert(`✅ 요약 저장 완료!\n\n📌 제목: ${data.title}\n📝 요약: ${data.summary}`);
-    } else {
-      alert("요약 저장에 실패했습니다.");
+      if (response.ok) {
+        const data = await response.json();
+        // alert(`✅ 요약 저장 완료!\n\n📌 제목: ${data.title}\n📝 요약: ${data.summary}`);
+        navigate("/");
+      } else {
+        alert("요약 저장에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("요약 중 오류:", error);
+      alert("요약 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false); // ✅ 로딩 종료
     }
   };
 
-
-  // isInitialized 설정 (대화가 추가되면 true로 변경)
   useEffect(() => {
     if (messages.length > 0) {
       setIsInitialized(true);
     }
   }, [messages]);
 
-  // 새로운 메시지가 추가될 때 자동 스크롤
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -98,18 +103,31 @@ const Chatbot = () => {
 
       {/* 채팅 UI */}
       <div className="w-[1000px] bg-white rounded-lg flex flex-col mt-16">
-        <div
-          className={`p-5 flex-1 overflow-y-auto space-y-3 transition-all ${isInitialized ? "pt-10" : ""
-            }`}
-        >
-          {messages.length === 0 && (
+        <div className={`p-5 flex-1 overflow-y-auto space-y-3 transition-all ${isInitialized ? "pt-10" : ""}`}>
+
+          {/* ✅ 요약 로딩 */}
+          {isLoading && (
+            <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-30 z-50 flex flex-col items-center justify-center">
+              <div className="flex items-center bg-white px-6 py-4 rounded-xl shadow-lg">
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-blue-800 text-lg font-semibold">요약 생성 중입니다. 잠시만 기다려주세요...</span>
+              </div>
+            </div>
+          )}
+
+
+          {/* 초기 메시지 */}
+          {messages.length === 0 && !isLoading && (
             <div className="text-center text-gray-500 text-2xl mb-10">
               궁금한 것을 무엇이든 물어보세요!
             </div>
           )}
+
+          {/* 대화 메시지 출력 */}
           {messages.map((msg, index) => (
             <Message key={index} sender={msg.sender} message={msg.message} />
           ))}
+
           <div ref={messagesEndRef} />
         </div>
 
