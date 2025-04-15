@@ -19,11 +19,6 @@ const noteSchema = new mongoose.Schema({
             ];
         },
     },
-
-    reviewedDates: {
-        type: [Date],
-        default: [],
-    },
 });
 
 
