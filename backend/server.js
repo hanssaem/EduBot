@@ -381,6 +381,55 @@ app.patch('/api/notes/:noteId/move', verifyToken, async (req, res) => {
   }
 });
 
+// ✅ 복습할 노트 목록 조회
+app.get("/api/review-notes", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.email;
+
+    const today = new Date();
+
+    // 🔍 조건: 아직 확인하지 않았고, createdAt + 주기 ≤ 오늘
+    const notes = await Note.find({
+      userId,
+      checked: false,
+      $expr: {
+        $lte: [
+          { $add: ["$createdAt", { $multiply: ["$reviewInterval", 24 * 60 * 60 * 1000] }] },
+          today,
+        ],
+      },
+    });
+
+    res.status(200).json(notes);
+  } catch (error) {
+    console.error("복습 노트 조회 오류:", error);
+    res.status(500).json({ error: "복습 노트 조회 실패" });
+  }
+});
+
+// ✅ 특정 노트 복습 완료 처리
+app.patch("/api/review-notes/:id/check", verifyToken, async (req, res) => {
+  try {
+    const noteId = req.params.id;
+    const userId = req.user.email;
+
+    const note = await Note.findOne({ _id: noteId, userId });
+
+    if (!note) {
+      return res.status(404).json({ error: "노트를 찾을 수 없습니다." });
+    }
+
+    note.checked = true;
+    await note.save();
+
+    res.status(200).json({ message: "복습 완료 표시됨", note });
+  } catch (error) {
+    console.error("복습 체크 오류:", error);
+    res.status(500).json({ error: "복습 체크 실패" });
+  }
+});
+
+
 // ✅ 서버 실행
 app.listen(port, () => {
   console.log(`🚀 Server is running at http://localhost:${port}`);
