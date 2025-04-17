@@ -315,27 +315,54 @@ app.post('/api/folders', verifyToken, async (req, res) => {
 //특정 폴더에 속한 노트 조회 API
 app.get('/api/folders/:folderId/notes', verifyToken, async (req, res) => {
   try {
-    const { folderId } = req.params; // 📌 URL에서 폴더 ID 가져오기
-    const userId = req.user.email; // 📌 로그인한 사용자 ID 확인 (Firebase UID)
+    const { folderId } = req.params;
+    const userId = req.user.email;
 
-    // 1️⃣ 폴더 존재 여부 확인
     const folder = await Folder.findById(folderId);
     if (!folder) {
       return res.status(404).json({ error: '폴더를 찾을 수 없습니다.' });
     }
 
-    // 2️⃣ 폴더 소유자가 로그인한 사용자와 일치하는지 확인
     if (folder.userId !== userId) {
       return res.status(403).json({ error: '폴더 접근 권한이 없습니다.' });
     }
 
-    // 3️⃣ 해당 폴더에 속한 노트 조회
-    const notes = await Note.find({ folderId, userId });
+    // 📌 최신순 정렬
+    const notes = await Note.find({ folderId, userId }).sort({ createdAt: -1 });
 
     res.status(200).json({ message: '폴더 내 노트 조회 성공', notes });
   } catch (error) {
     console.error('폴더별 노트 조회 오류:', error);
     res.status(500).json({ error: '폴더별 노트 조회 실패' });
+  }
+});
+
+//폴더에 속하지 않은 노트 조회
+app.get('/api/notes/no-folder', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.email;
+
+    const notes = await Note.find({ userId, folderId: null }).sort({ createdAt: -1 });
+
+    res.status(200).json({ message: '폴더에 속하지 않은 노트 조회 성공', notes });
+  } catch (error) {
+    console.error('폴더 없음 노트 조회 오류:', error);
+    res.status(500).json({ error: '폴더 없음 노트 조회 실패' });
+  }
+});
+
+//전체 폴더명 조회
+app.get('/api/folders', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.email;
+
+    // 해당 사용자의 모든 폴더 조회
+    const folders = await Folder.find({ userId }).sort({ name: 1 }); // 이름순 정렬
+
+    res.status(200).json({ message: '폴더 목록 조회 성공', folders });
+  } catch (error) {
+    console.error('폴더 목록 조회 오류:', error);
+    res.status(500).json({ error: '폴더 목록 조회 실패' });
   }
 });
 
@@ -380,6 +407,7 @@ app.patch('/api/notes/:noteId/move', verifyToken, async (req, res) => {
     res.status(500).json({ error: '노트 폴더 이동 실패' });
   }
 });
+
 
 // ✅ 복습할 노트 목록 조회
 app.get("/api/review-notes", verifyToken, async (req, res) => {
