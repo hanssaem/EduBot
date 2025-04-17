@@ -14,18 +14,30 @@ const NotebookDetail = ({
   onClose,
   notebook,
   userToken,
-  onDeleteSuccess,
+  onSuccess,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [folders, setFolders] = useState([]);
+  const foldersWithDefault = [
+    { _id: null, name: '기본 위치 (폴더 없음)' },
+    ...folders,
+  ];
+  const [selectedFolder, setSelectedFolder] = useState(null);
   const [editedNotebook, setEditedNotebook] = useState({
     title: '',
     content: '',
   });
 
-  const moveFolder = async (noteId, targetFolderId) => {
+  const moveFolder = async (noteId, targetFolder) => {
+    if (!targetFolder?.name) {
+      alert('이동할 폴더를 선택해주세요.');
+      return;
+    }
+
     try {
       const response = await fetch(
         `http://localhost:5000/api/notes/${noteId}/move`,
@@ -35,7 +47,7 @@ const NotebookDetail = ({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${userToken}`,
           },
-          body: JSON.stringify({ targetFolderId }),
+          body: JSON.stringify({ targetFolderId: targetFolder._id }),
         }
       );
 
@@ -44,8 +56,32 @@ const NotebookDetail = ({
       if (!response.ok) {
         throw new Error(data.error);
       }
+
+      onClose();
+      onSuccess();
     } catch (error) {
       console.error('폴더 이동 실패: ', error);
+    }
+  };
+
+  const fetchFolders = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/folders', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+
+      setFolders(data.folders);
+    } catch (error) {
+      console.error('폴더명 가져오기 실패: ', error);
     }
   };
 
@@ -90,11 +126,11 @@ const NotebookDetail = ({
       if (!response.ok) {
         throw new Error(data.error);
       }
+
+      onClose();
+      onSuccess();
     } catch (error) {
       console.error('노트 삭제 실패:', error);
-    } finally {
-      onClose();
-      onDeleteSuccess();
     }
   };
 
@@ -110,10 +146,16 @@ const NotebookDetail = ({
 
   const handleMoveModal = () => {
     setIsMoveModalOpen(!isMoveModalOpen);
+    setTimeout(() => {
+      setSelectedFolder(null);
+    }, 300);
+    fetchFolders();
   };
 
   const handleMoveClick = () => {
-    moveFolder(notebook._id);
+    moveFolder(notebook._id, selectedFolder);
+    setSelectedFolder(null);
+    handleMoveModal();
   };
 
   const toggleEditMode = () => {
@@ -145,6 +187,7 @@ const NotebookDetail = ({
 
   const handleDeleteClick = () => {
     deleteNote(notebook._id, userToken);
+    handleDeleteModal();
   };
 
   // 입력 필드 변경 처리
@@ -321,12 +364,18 @@ const NotebookDetail = ({
       <Modal
         isOpen={isMoveModalOpen}
         title="폴더를 이동하시겠습니까?"
+        size={isDropdownOpen ? 'large' : 'default'}
         content={
           <div className="flex flex-col gap-4">
             <p className="text-gray-600 text-sm">
               해당 노트를 이동시킬 폴더를 선택해주세요.
             </p>
-            <Dropdown />
+            <Dropdown
+              items={foldersWithDefault}
+              selectedItem={selectedFolder}
+              onSelect={(folderId) => setSelectedFolder(folderId)}
+              onToggle={(isOpen) => setIsDropdownOpen(isOpen)}
+            />
           </div>
         }
         confirmText="이동"
