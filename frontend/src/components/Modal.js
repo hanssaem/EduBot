@@ -6,6 +6,7 @@ export default function Modal({
   useConfirmButton = true,
   confirmText = '확인',
   mode = 'default',
+  size = 'default',
   onClose = () => {},
   onConfirm = () => {},
 }) {
@@ -16,9 +17,15 @@ export default function Modal({
 
   return (
     <dialog className={`modal ${isOpen ? 'open' : ''}`} open={isOpen}>
-      <div className="modal-box rounded-2xl">
+      <div className={`modal-box rounded-2xl overflow-y-auto`}>
         <h3 className="font-bold text-lg font-pretendard">{title}</h3>
-        <div className="py-4 font-pretendard">{content}</div>
+        <div
+          className={`py-4 font-pretendard ${
+            size === 'large' ? 'h-[220px]' : ''
+          }`}
+        >
+          {content}
+        </div>
         <div className="modal-action">
           {useCancelButton && (
             <button
@@ -29,13 +36,7 @@ export default function Modal({
             </button>
           )}
           {useConfirmButton && (
-            <button
-              className={confirmButtonClass}
-              onClick={() => {
-                onConfirm();
-                onClose();
-              }}
-            >
+            <button className={confirmButtonClass} onClick={onConfirm}>
               {confirmText}
             </button>
           )}
