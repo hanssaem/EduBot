@@ -298,18 +298,23 @@ app.post('/api/folders', verifyToken, async (req, res) => {
       return res.status(400).json({ error: '폴더 이름을 입력해주세요.' });
     }
 
-    const newFolder = new Folder({
-      userId,
-      name,
-    });
+    // ✅ 중복 폴더명 검사 (같은 사용자 기준)
+    const existingFolder = await Folder.findOne({ userId, name });
+    if (existingFolder) {
+      return res.status(409).json({ error: '이미 같은 이름의 폴더가 존재합니다.' });
+    }
 
+    // ✅ 새 폴더 생성
+    const newFolder = new Folder({ userId, name });
     await newFolder.save();
+
     res.status(201).json({ message: '폴더 생성 성공', folder: newFolder });
   } catch (error) {
     console.error('폴더 생성 중 오류:', error);
     res.status(500).json({ error: '폴더 생성 실패' });
   }
 });
+
 
 
 //특정 폴더에 속한 노트 조회 API
