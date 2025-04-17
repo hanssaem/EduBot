@@ -3,7 +3,7 @@ import Modal from './Modal';
 import { FolderPlusIcon } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
 
-export default function CreateFolder({ userToken }) {
+export default function CreateFolder({ userToken, onSuccess }) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [isGuide, setIsGuide] = useState(false);
@@ -22,9 +22,17 @@ export default function CreateFolder({ userToken }) {
 
       const data = await response.json();
 
+      if (response.status === 409) {
+        alert(`${data.error}`);
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(data.error);
       }
+
+      onSuccess();
+      handleCloseModal();
     } catch (error) {
       console.log('폴더 생성 실패: ', error);
     }
