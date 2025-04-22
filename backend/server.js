@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
@@ -14,6 +15,19 @@ const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// 🔐 사용자 이메일 기반 rate limiter
+const createUserRateLimiter = () =>
+  rateLimit({
+    windowMs: 60 * 60 * 1000, // 1시간
+    max: 5, // 최대 50회
+    keyGenerator: (req) => req.user?.email || req.ip, // 이메일 기준, 없으면 IP 기준
+    message: {
+      error: '❌ 1시간에 최대 50개의 질문만 가능합니다. 잠시 후 다시 시도해주세요.',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
 
 // ✅ Firebase Admin SDK 초기화
 const serviceAccount = require('./firebase-admin-sdk.json'); // ⚠️ 서비스 계정 JSON 필요!
@@ -45,7 +59,9 @@ const verifyToken = async (req, res, next) => {
 const apiKey = process.env.OPENAI_API_KEY;
 const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
 
-app.post('/api/chat', async (req, res) => {
+const userRateLimiter = createUserRateLimiter();
+
+app.post('/api/chat', userRateLimiter, async (req, res) => {
   const { messages } = req.body; // 🔥 `prompt` 대신 `messages` 배열 받기
 
   // 🔥 OpenAI가 이해할 수 있도록 messages 배열을 변환
@@ -81,7 +97,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-app.post('/api/summarize', async (req, res) => {
+app.post('/api/summarize', userRateLimiter, async (req, res) => {
   const { messages, prompt, email } = req.body;
 
   if (!messages || messages.length === 0) {
