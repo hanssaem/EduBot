@@ -20,7 +20,7 @@ app.use(express.json());
 const createUserRateLimiter = () =>
   rateLimit({
     windowMs: 60 * 60 * 1000, // 1시간
-    max: 5, // 최대 50회
+    max: 50, // 최대 50회
     keyGenerator: (req) => req.user?.email || req.ip, // 이메일 기준, 없으면 IP 기준
     message: {
       error:
