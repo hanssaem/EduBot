@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
-import Message from "../components/Message";
-import Input from "../components/Input";
-import { SiProbot } from "react-icons/si";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from 'react';
+import Message from '../components/Message';
+import Input from '../components/Input';
+import { SiProbot } from 'react-icons/si';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([]);
@@ -27,23 +27,34 @@ const Chatbot = () => {
   };
 
   const handleSendMessage = async (message) => {
-    const userMessage = { sender: "User", message };
+    const userMessage = { sender: 'User', message };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
 
     try {
       setIsLoadingChat(true);
-      const response = await fetch("http://localhost:5000/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: updatedMessages }),
       });
 
+      if (response.status === 429) {
+        addMessage(
+          'Chatbot',
+          '1시간에 최대 50개의 질문만 가능합니다. 잠시 후 다시 시도해주세요.'
+        );
+        return;
+      }
+
       const data = await response.json();
-      const botMessage = { sender: "Chatbot", message: data.reply };
-      setMessages((prevMessages) => [...prevMessages, botMessage]);
+      addMessage('Chatbot', data.reply);
     } catch (error) {
-      console.error("Error:", error);
+      console.error('Error:', error);
+      addMessage(
+        'Chatbot',
+        '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
+      );
     } finally {
       setIsLoadingChat(false);
     }
@@ -51,29 +62,34 @@ const Chatbot = () => {
 
   const handleSummarize = async () => {
     if (messages.length === 0) {
-      alert("대화 내용이 없습니다.");
+      alert('대화 내용이 없습니다.');
       return;
     }
 
-    const summaryPrompt = "지금까지의 대화를 최대한 상세하고 길게 요약해줘. 학습노트처럼 정리해줘.";
+    const summaryPrompt =
+      '지금까지의 대화를 최대한 상세하고 길게 요약해줘. 학습노트처럼 정리해줘.';
     setIsSummarizing(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, prompt: summaryPrompt, email: user.email }),
+      const response = await fetch('http://localhost:5000/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          prompt: summaryPrompt,
+          email: user.email,
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        navigate("/"); // 요약 완료 후 홈으로 이동
+        navigate('/'); // 요약 완료 후 홈으로 이동
       } else {
-        alert("요약 저장에 실패했습니다.");
+        alert('요약 저장에 실패했습니다.');
       }
     } catch (error) {
-      console.error("요약 중 오류:", error);
-      alert("요약 중 오류가 발생했습니다.");
+      console.error('요약 중 오류:', error);
+      alert('요약 중 오류가 발생했습니다.');
     } finally {
       setIsSummarizing(false);
     }
@@ -86,7 +102,7 @@ const Chatbot = () => {
   }, [messages]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   return (
@@ -113,7 +129,7 @@ const Chatbot = () => {
       <div className="w-[1000px] bg-white rounded-lg flex flex-col mt-16">
         <div
           className={`p-5 flex-1 overflow-y-auto space-y-3 transition-all ${
-            isInitialized ? "pt-10" : ""
+            isInitialized ? 'pt-10' : ''
           }`}
         >
           {messages.length === 0 && !isLoadingChat && (
@@ -132,8 +148,14 @@ const Chatbot = () => {
               <div className="bg-gray-100 text-gray-900 p-4 rounded-lg rounded-bl-none max-w-[80%]">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-3 h-3 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-                  <div className="w-3 h-3 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+                  <div
+                    className="w-3 h-3 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: '0.2s' }}
+                  ></div>
+                  <div
+                    className="w-3 h-3 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: '0.4s' }}
+                  ></div>
                 </div>
               </div>
             </div>

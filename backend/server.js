@@ -8,7 +8,7 @@ require('dotenv').config();
 
 const User = require('./models/User'); // ✅ User 모델 추가
 const Note = require('./models/Note'); // ✅ Note 모델 추가
-const Folder = require("./models/Folder");
+const Folder = require('./models/Folder');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -20,10 +20,11 @@ app.use(express.json());
 const createUserRateLimiter = () =>
   rateLimit({
     windowMs: 60 * 60 * 1000, // 1시간
-    max: 5, // 최대 50회
+    max: 50, // 최대 50회
     keyGenerator: (req) => req.user?.email || req.ip, // 이메일 기준, 없으면 IP 기준
     message: {
-      error: '❌ 1시간에 최대 50개의 질문만 가능합니다. 잠시 후 다시 시도해주세요.',
+      error:
+        '❌ 1시간에 최대 50개의 질문만 가능합니다. 잠시 후 다시 시도해주세요.',
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -132,7 +133,6 @@ app.post('/api/summarize', userRateLimiter, async (req, res) => {
   제목: (한 줄로 짧게)
   요약:
   `;
-
 
   const requestOptions = {
     headers: {
@@ -317,7 +317,9 @@ app.post('/api/folders', verifyToken, async (req, res) => {
     // ✅ 중복 폴더명 검사 (같은 사용자 기준)
     const existingFolder = await Folder.findOne({ userId, name });
     if (existingFolder) {
-      return res.status(409).json({ error: '이미 같은 이름의 폴더가 존재합니다.' });
+      return res
+        .status(409)
+        .json({ error: '이미 같은 이름의 폴더가 존재합니다.' });
     }
 
     // ✅ 새 폴더 생성
@@ -330,8 +332,6 @@ app.post('/api/folders', verifyToken, async (req, res) => {
     res.status(500).json({ error: '폴더 생성 실패' });
   }
 });
-
-
 
 //특정 폴더에 속한 노트 조회 API
 app.get('/api/folders/:folderId/notes', verifyToken, async (req, res) => {
@@ -363,9 +363,13 @@ app.get('/api/notes/no-folder', verifyToken, async (req, res) => {
   try {
     const userId = req.user.email;
 
-    const notes = await Note.find({ userId, folderId: null }).sort({ createdAt: -1 });
+    const notes = await Note.find({ userId, folderId: null }).sort({
+      createdAt: -1,
+    });
 
-    res.status(200).json({ message: '폴더에 속하지 않은 노트 조회 성공', notes });
+    res
+      .status(200)
+      .json({ message: '폴더에 속하지 않은 노트 조회 성공', notes });
   } catch (error) {
     console.error('폴더 없음 노트 조회 오류:', error);
     res.status(500).json({ error: '폴더 없음 노트 조회 실패' });
@@ -409,12 +413,16 @@ app.patch('/api/notes/:noteId/move', verifyToken, async (req, res) => {
     if (targetFolderId) {
       const targetFolder = await Folder.findById(targetFolderId);
       if (!targetFolder) {
-        return res.status(404).json({ error: '이동할 폴더를 찾을 수 없습니다.' });
+        return res
+          .status(404)
+          .json({ error: '이동할 폴더를 찾을 수 없습니다.' });
       }
 
       // 4️⃣ 폴더 소유자가 동일한 사용자인지 확인
       if (targetFolder.userId !== userId) {
-        return res.status(403).json({ error: '이동할 폴더에 대한 접근 권한이 없습니다.' });
+        return res
+          .status(403)
+          .json({ error: '이동할 폴더에 대한 접근 권한이 없습니다.' });
       }
     }
 
@@ -429,16 +437,15 @@ app.patch('/api/notes/:noteId/move', verifyToken, async (req, res) => {
   }
 });
 
-
 // ✅ 복습할 노트 목록 조회
-app.get("/api/review-notes", verifyToken, async (req, res) => {
+app.get('/api/review-notes', verifyToken, async (req, res) => {
   try {
     const userId = req.user.email;
     const now = new Date();
 
     const notes = await Note.find({ userId });
 
-    const dueNotes = notes.filter(note => {
+    const dueNotes = notes.filter((note) => {
       const { reviewSchedule } = note;
       if (!reviewSchedule || reviewSchedule.length === 0) return false;
 
@@ -448,14 +455,13 @@ app.get("/api/review-notes", verifyToken, async (req, res) => {
 
     res.status(200).json(dueNotes);
   } catch (error) {
-    console.error("복습 노트 조회 오류:", error);
-    res.status(500).json({ error: "복습 노트 조회 실패" });
+    console.error('복습 노트 조회 오류:', error);
+    res.status(500).json({ error: '복습 노트 조회 실패' });
   }
 });
 
-
 // ✅ 특정 노트 복습 완료 처리
-app.patch("/api/review-notes/:id/check", verifyToken, async (req, res) => {
+app.patch('/api/review-notes/:id/check', verifyToken, async (req, res) => {
   try {
     const userId = req.user.email;
     const noteId = req.params.id;
@@ -463,32 +469,38 @@ app.patch("/api/review-notes/:id/check", verifyToken, async (req, res) => {
 
     const note = await Note.findOne({ _id: noteId, userId });
     if (!note) {
-      return res.status(404).json({ error: "노트를 찾을 수 없습니다." });
+      return res.status(404).json({ error: '노트를 찾을 수 없습니다.' });
     }
 
     const { reviewSchedule } = note;
     if (!reviewSchedule || reviewSchedule.length === 0) {
-      return res.status(200).json({ message: "복습 일정이 모두 완료되었습니다.", note });
+      return res
+        .status(200)
+        .json({ message: '복습 일정이 모두 완료되었습니다.', note });
     }
 
     const nextReviewDate = reviewSchedule[0];
 
     if (nextReviewDate <= now) {
       // ✅ 복습 완료: 이전 날짜들은 모두 제거
-      note.reviewSchedule = reviewSchedule.filter(date => date > nextReviewDate);
+      note.reviewSchedule = reviewSchedule.filter(
+        (date) => date > nextReviewDate
+      );
       await note.save();
 
       return res.status(200).json({
-        message: "복습 완료 처리됨",
+        message: '복습 완료 처리됨',
         reviewedDate: nextReviewDate,
-        note
+        note,
       });
     } else {
-      return res.status(400).json({ error: "아직 복습할 시기가 되지 않았습니다." });
+      return res
+        .status(400)
+        .json({ error: '아직 복습할 시기가 되지 않았습니다.' });
     }
   } catch (error) {
-    console.error("복습 체크 오류:", error);
-    res.status(500).json({ error: "복습 체크 실패" });
+    console.error('복습 체크 오류:', error);
+    res.status(500).json({ error: '복습 체크 실패' });
   }
 });
 
