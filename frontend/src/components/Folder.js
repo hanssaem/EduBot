@@ -7,7 +7,7 @@ const Folder = ({ name, onClick }) => {
       onClick={onClick}
     >
       {/* Folder main body */}
-      <div className="absolute inset-0 bg-yellow-300 rounded-2xl shadow-md">
+      <div className="absolute inset-0 bg-yellow-300 rounded-2xl">
         {/* Top center fastener */}
         <div className="absolute -top-0 left-1/2 transform -translate-x-1/2 w-6 h-16 bg-yellow-400 rounded-t-md rounded-b-lg z-10">
           {/* Mint circle button */}
